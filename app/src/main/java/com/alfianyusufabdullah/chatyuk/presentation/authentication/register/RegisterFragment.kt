@@ -18,13 +18,12 @@ import com.alfianyusufabdullah.chatyuk.showSnackbar
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.android.synthetic.main.fragment_register.*
+import org.koin.android.ext.android.inject
 
 class RegisterFragment : Fragment(), RegisterView {
 
     private lateinit var pageListener: AuthenticationPageListener
-    private lateinit var messageRepository: MessageRepository
-    private lateinit var authenticationRepository: AuthenticationRepository
-    private lateinit var registerPresenter: RegisterPresenter
+    private val registerPresenter by inject<RegisterPresenter>()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -34,10 +33,6 @@ class RegisterFragment : Fragment(), RegisterView {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        messageRepository = MessageRepository(ChatReferences())
-        authenticationRepository = AuthenticationRepository(FirebaseAuth.getInstance(), ChatReferences())
-
-        registerPresenter = RegisterPresenter(authenticationRepository)
         registerPresenter.attachView(this)
 
         regisUser.addTextChangedListener(InputTextListener(inputUsername))
@@ -48,12 +43,12 @@ class RegisterFragment : Fragment(), RegisterView {
         txtSignIn.setOnClickListener { pageListener.onLoginPage() }
         btnSignUp.setOnClickListener {
 
-            val user = User().apply {
-                username = regisUser.text.toString().trim()
-                email = regisEmail.text.toString().trim()
-                password = regisPass.text.toString().trim()
-                confirmPassword = regisPassConfirm.text.toString().trim()
-            }
+            val user = User(
+                    username = regisUser.text.toString().trim(),
+                    email = regisEmail.text.toString().trim(),
+                    password = regisPass.text.toString().trim(),
+                    confirmPassword = regisPassConfirm.text.toString().trim()
+            )
 
             registerPresenter.doRegister(user)
         }
@@ -106,6 +101,10 @@ class RegisterFragment : Fragment(), RegisterView {
         setInputTextEnabled(false)
     }
 
+    override fun onProgress(visibility: Int) {
+        loading.visibility = visibility
+    }
+
     override fun onRegisterSuccess(user: User) {
         pageListener.onAuthenticateSuccess(user)
     }
@@ -122,8 +121,6 @@ class RegisterFragment : Fragment(), RegisterView {
         inputEmail.isEnabled = state
         inputPass.isEnabled = state
         inputPassConfirm.isEnabled = state
-
-        loading.visibility = if (state) View.GONE else View.VISIBLE
     }
 
     override fun onDetach() {

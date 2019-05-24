@@ -17,13 +17,12 @@ import com.alfianyusufabdullah.chatyuk.presentation.authentication.Authenticatio
 import com.alfianyusufabdullah.chatyuk.showSnackbar
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.android.synthetic.main.fragment_login.*
+import org.koin.android.ext.android.inject
 
 class LoginFragment : Fragment(), LoginView {
 
     private lateinit var pageListener: AuthenticationPageListener
-    private lateinit var messageRepository: MessageRepository
-    private lateinit var authenticationRepository: AuthenticationRepository
-    private lateinit var loginPresenter: LoginPresenter
+    private val loginPresenter by inject<LoginPresenter>()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -33,10 +32,6 @@ class LoginFragment : Fragment(), LoginView {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        messageRepository = MessageRepository(ChatReferences())
-        authenticationRepository = AuthenticationRepository(FirebaseAuth.getInstance(), ChatReferences())
-
-        loginPresenter = LoginPresenter(authenticationRepository)
         loginPresenter.attachView(this)
 
         loginEmail.addTextChangedListener(InputTextListener(inputEmail))
@@ -45,10 +40,9 @@ class LoginFragment : Fragment(), LoginView {
         txtSignUp.setOnClickListener { pageListener.onRegisterPage() }
         btnSignIn.setOnClickListener {
 
-            val user = User().apply {
-                email = loginEmail.text.toString().trim()
-                password = loginPass.text.toString().trim()
-            }
+            val user = User(
+                    email = loginEmail.text.toString().trim(),
+                    password = loginPass.text.toString().trim())
 
             loginPresenter.doLogin(user)
         }
@@ -81,6 +75,10 @@ class LoginFragment : Fragment(), LoginView {
         setInputTextEnabled(false)
     }
 
+    override fun onProgress(visibility: Int) {
+        loading.visibility = visibility
+    }
+
     override fun onLoginSuccess(user: User) {
         pageListener.onAuthenticateSuccess(user)
     }
@@ -95,8 +93,6 @@ class LoginFragment : Fragment(), LoginView {
     private fun setInputTextEnabled(state: Boolean) {
         inputEmail.isEnabled = state
         inputPass.isEnabled = state
-
-        loading.visibility = if (state) View.GONE else View.VISIBLE
     }
 
     override fun onDetach() {
